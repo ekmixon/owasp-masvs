@@ -45,9 +45,7 @@ def order_filenames(target):
         l = [file.name for file in Path(target).glob("0x*-V*.md")]
         ret_l = []
         for k in keys:
-            for name in l:
-                if k in name:
-                    ret_l.append(name)
+            ret_l.extend(name for name in l if k in name)
         return ret_l
     raise Exception(f"The provided path ({target}) does not exist. Does the corresponding language supported in the MASVS?")
 
@@ -57,26 +55,17 @@ class MASVS:
 
     def __init__(self, lang):
 
-        if lang == "en":
-            target = "../Document"
-        else:
-            target = "../Document-{}".format(lang)
-
+        target = "../Document" if lang == "en" else f"../Document-{lang}"
         for file in order_filenames(target):
             for line in open(os.path.join(target, file)):
                 regex = re.compile(r'\*\*(\d\.\d+)\*\*\s\|\s{0,1}(.*?)\s{0,1}\|\s{0,1}(.*?)\s{0,1}\|\s{0,1}(.*?)\s{0,1}\|(\s{0,1}(.*?)\s{0,1}\|)?')
-                m = re.search(regex, line)
-
-                if m:
-                    req = {}
-                    num_id = m.group(1).strip()
-                    mstg_id = m.group(2).replace(u"\u2011", "-")
-                    req['id'] = num_id
-                    req['category'] = mstg_id
-                    req['text'] = m.group(3).strip()
-                    if m.group(5):
-                        req['L1'] = len(m.group(4).strip()) > 0
-                        req['L2'] = len(m.group(5).strip()) > 0
+                if m := re.search(regex, line):
+                    num_id = m[1].strip()
+                    mstg_id = m[2].replace(u"\u2011", "-")
+                    req = {'id': num_id, 'category': mstg_id, 'text': m[3].strip()}
+                    if m[5]:
+                        req['L1'] = len(m[4].strip()) > 0
+                        req['L2'] = len(m[5].strip()) > 0
                         req['R'] = False
                     else:
                         req['R'] = True
